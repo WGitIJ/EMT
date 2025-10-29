@@ -76,7 +76,7 @@ class BusArrivalApp(QMainWindow):
     def fetch_bus_data(self, stop_number):
         # Placeholder for API request (replace with actual EMT API call)
         try:
-            # Example: requests.get(f"https://api.emtmadrid.es/stop/{stop_number}")
+            response = requests.get(f"https://api.emtmadrid.es/stop/{stop_number}")
             # This is a mock response; replace with actual API logic
             response = {
                 "lines": [
@@ -85,7 +85,6 @@ class BusArrivalApp(QMainWindow):
                     {"line": "45", "color": "#0000FF", "arrival_time": "15 min"}
                 ]
             }
-            //oooo
             return response
         except requests.RequestException:
             return None
