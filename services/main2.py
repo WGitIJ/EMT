@@ -79,7 +79,13 @@ class BusArrivalApp(QMainWindow):
             # Example: requests.get(f"https://api.emtmadrid.es/stop/{stop_number}")
             # This is a mock response; replace with actual API logic
             response = {
+                "lines": [
+                    {"line": "27", "color": "#FF0000", "arrival_time": "5 min"},
+                    {"line": "34", "color": "#00FF00", "arrival_time": "10 min"},
+                    {"line": "45", "color": "#0000FF", "arrival_time": "15 min"}
+                ]
             }
+            //oooo
             return response
         except requests.RequestException:
             return None
