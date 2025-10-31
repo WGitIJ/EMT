@@ -97,50 +97,36 @@ class BusArrivalApp(QMainWindow):
             for bus in result:
                 self.add_bus(bus)
 
+ 
+
     def get_real(self, stop):
         try:
-            url = f"https://www.emtpalma.cat/maas/api/v1/agency/stops/{stop}/timest"
+            url = f"https://www.emtpalma.cat/maas/api/v1/agency/stops/{stop}/timestr"
 
             headers = {
                 "accept": "*/*",
-                "accept-language": "es-ES,es;q=0.9,en;q=0.8,ca;q=0.7",
-                "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzM4NCJ9.eyJzdWIiOiI3OTM3NDciLCJpYXQiOjE3NjE5MDM5NjIsImV4cCI6MzMzOTc4Mzk2MiwidXNlcm5hbWUiOiIxNzYxOTAzOTYyMDc3VVI3VTdBOVBUV1MxRjFBTk4zT0YiLCJ0b2tlbl9kZXZpY2UiOiJjYzA0NTBmMmIwOGM3ZWUwMjMyZmQzYzBjMjAyYzI2OGM2YWU1MTcwYjMzMzI0ZTRlM2Y2ODA5ZTdmZjViYTI1IiwiZGV2aWNlX3R5cGVfaWQiOjMsInJvbGVzIjoiQU5PTklNTyJ9.mKXh7IofZFcwbNgXkfFQXvUAwlDK8DpxDvH-oAwts0tDLgoxsekDz4EuGOqED5n_",
-                "priority": "u=1, i",
-                "referer": f"https://www.emtpalma.cat/es/paradas/{stop}/",
-                "sec-ch-ua": '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
-                "sec-ch-ua-mobile": "?0",
-                "sec-ch-ua-platform": '"Windows"',
-                "sec-fetch-dest": "empty",
-                "sec-fetch-mode": "cors",
-                "sec-fetch-site": "same-origin",
-                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+                "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzM4NCJ9.eyJzdWIiOiI3ODQ1NTUiLCJpYXQiOjE3NjE1Njg2MjksImV4cCI6MzMzOTQ0ODYyOSwidXNlcm5hbWUiOiIxNzYxNTY4NjI4NzY1NVJCVUtTUk81SU9BWkVXTjE0T0EiLCJ0b2tlbl9kZXZpY2UiOiJkNTk2YzExMzQ4MDExNjExZTNmMmYzMzllNzJlYjgzYzFkNmY2Mzc3ODhhYjQyODNjMzc4YzYyNmIzYjZkOWFjIiwiZGV2aWNlX3R5cGVfaWQiOjMsInJvbGVzIjoiQU5PTklNTyJ9.8d6suKy2_5aw1H6pGktFIizOwUqIYb1piFGKfAQUlCywq7vuW6-rh_7y7VSwoqdl",
+                "user-agent": "Mozilla/5.0"
             }
 
-            cookies = {
-                "_ga": "GA1.1.4088619.1761903963",
-                "EmtPalmaCookie": "true",
-                "_ga_DR79E3DM4C": "GS2.1.s1761903963$o1$g1$t1761904188$j14$l0$h0"
-            }
+            response = requests.get(url, headers=headers, timeout=10)
 
-            response = requests.get(url, headers=headers, cookies=cookies, timeout=10)
-
-            # 1. TOKEN EXPIRADO
+            # 1️⃣ Token caducado
             if response.status_code == 401:
                 return "token_expired"
 
-            # 2. ERROR DEL SERVIDOR O SIN INTERNET
+            # 2️⃣ Error de conexión o servidor
             if not response.ok:
                 return "no_internet"
 
             json_data = response.json()
+            print(json_data)  # ← puedes dejar esto para depurar
 
-            # 3. PARADA NO EXISTE
-            if "data" not in json_data or not json_data["data"]:
+            # 3️⃣ Si no hay datos o formato inesperado
+            if not isinstance(json_data, list) or len(json_data) == 0:
                 return "invalid_stop"
 
-            # 4. DATOS VÁLIDOS
-            arrivals = json_data["data"][:6]
-            now = datetime.now().timestamp()
+            # Colores por línea
             colors = {
                 "1": "#d32f2f", "2": "#1976d2", "3": "#388e3c", "4": "#f57c00",
                 "7": "#7b1fa2", "15": "#00796b", "20": "#c2185b", "23": "#512da8",
@@ -148,26 +134,34 @@ class BusArrivalApp(QMainWindow):
             }
 
             result = []
-            for b in arrivals:
-                line = str(b.get("line", "N/A"))
-                dest = (b.get("headsign") or "Sin destino")[:30]
-                exp = b.get("expectedDepartureTime")
 
-                if exp and isinstance(exp, (int, float)):
-                    mins = max(0, int((exp / 1000 - now) / 60))
-                    time = "YA" if mins == 0 else f"{mins}'"
-                else:
-                    time = "Pronto"
+            # 4️⃣ Procesar líneas y vehículos
+            for entry in json_data:
+                line = str(entry.get("lineCode", "N/A"))
+                vehicles = entry.get("vehicles", [])
 
-                result.append({
-                    "line": line,
-                    "color": colors.get(line, colors["default"]),
-                    "dest": dest,
-                    "time": time
-                })
-            return result
+                for v in vehicles:
+                    dest = (v.get("destination") or "Sin destino")[:30]
+                    seconds = v.get("seconds", 0)
 
-        # ERRORES DE RED
+                    if isinstance(seconds, (int, float)):
+                        mins = max(0, int(seconds / 60))
+                        time = "YA" if mins == 0 else f"{mins}'"
+                    else:
+                        time = "Pronto"
+
+                    result.append({
+                        "line": line,
+                        "color": colors.get(line, colors["default"]),
+                        "dest": dest,
+                        "time": time
+                    })
+
+            if not result:
+                return "invalid_stop"
+
+            return result[:8]  # mostrar solo los 8 primeros
+
         except requests.exceptions.ConnectionError:
             return "no_internet"
         except requests.exceptions.Timeout:
@@ -190,7 +184,8 @@ class BusArrivalApp(QMainWindow):
         lbl_line = QLabel(bus["line"])
         lbl_line.setFixedWidth(55)
         lbl_line.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lbl_line.setStyleSheet("font-weight:bold;color:white;border-radius:10px;")
+        lbl_line.setStyleSheet("font-weight:bold;color:black;border-radius:10px;")
+
         pal = lbl_line.palette()
         pal.setColor(lbl_line.backgroundRole(), QColor(bus["color"]))
         lbl_line.setPalette(pal)
