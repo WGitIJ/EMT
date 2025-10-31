@@ -178,26 +178,43 @@ class BusArrivalApp(QMainWindow):
 
     def add_bus(self, bus):
         row = QFrame()
-        row.setStyleSheet("background:white;border:1px solid #eee;border-radius:10px;margin:3px;")
+        row.setStyleSheet("""
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            margin: 6px 3px;
+            padding: 6px;
+        """)
         lay = QHBoxLayout(row)
 
         lbl_line = QLabel(bus["line"])
-        lbl_line.setFixedWidth(55)
+        lbl_line.setFixedWidth(65)
         lbl_line.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lbl_line.setStyleSheet("font-weight:bold;color:black;border-radius:10px;")
-
-        pal = lbl_line.palette()
-        pal.setColor(lbl_line.backgroundRole(), QColor(bus["color"]))
-        lbl_line.setPalette(pal)
-        lbl_line.setAutoFillBackground(True)
+        lbl_line.setStyleSheet(f"""
+            background: {bus['color']};
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            border-radius: 10px;
+            padding: 6px;
+        """)
         lay.addWidget(lbl_line)
 
         lbl_dest = QLabel(bus["dest"])
-        lbl_dest.setStyleSheet("font-size:14px;padding:5px;")
+        lbl_dest.setStyleSheet("""
+            font-size: 16px;
+            padding: 6px 10px;
+            color: #333;
+        """)
         lay.addWidget(lbl_dest, 1)
 
         lbl_time = QLabel(bus["time"])
-        lbl_time.setStyleSheet("font-weight:bold;font-size:18px;color:#d32f2f;padding:5px;")
+        lbl_time.setStyleSheet("""
+            font-weight: bold;
+            font-size: 20px;
+            color: #d32f2f;
+            padding: 6px 12px;
+        """)
         lay.addWidget(lbl_time, alignment=Qt.AlignmentFlag.AlignRight)
 
         self.scroll_l.addWidget(row)
