@@ -90,27 +90,24 @@ class BusController:
         layout.setSpacing(8)
 
         for bus in arrivals:
+            # Número de línea con su color
             line_label = QLabel(f"<b>Línea {bus['line']}</b>")
             line_label.setStyleSheet(f"color: {bus['color']}; font-size: 18px; font-weight: bold;")
 
+            # Destino y tiempo con estilo neutro
             dest_label = QLabel(f"{bus['dest']}")
             dest_label.setStyleSheet("font-size: 14px; color: #555;")
 
             time_label = QLabel(f"{bus['time']}")
             time_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #d32f2f;")
 
+            # Agrupación en bloque
             block = QWidget()
             block_layout = QVBoxLayout(block)
             block_layout.addWidget(line_label)
             block_layout.addWidget(dest_label)
             block_layout.addWidget(time_label)
             block_layout.setContentsMargins(12, 8, 12, 8)
-
-            # block.setStyleSheet("""
-            #     QWidget {
-            #         background-color: #e4f2f2;
-            #     }
-            # """)
 
             layout.addWidget(block)
 
@@ -120,6 +117,8 @@ class BusController:
             old_widget.deleteLater()
 
         self.view.scrollArea.setWidget(container)
+
+
 
     # ================================================================
     # Utilidad: mensajes de error / aviso

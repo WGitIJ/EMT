@@ -14,7 +14,8 @@ class EMTApi:
     # --------------------------------------------------------
     def load_line_colors(self):
         try:
-            url = f"https://www.emtpalma.cat/maas/api/v1/agency/stops/"
+            # ✅ Endpoint correcto: líneas con sus colores
+            url = "https://www.emtpalma.cat/maas/api/v1/agency/lines/"
             headers = {
                 "accept": "*/*",
                 "authorization": self.TOKEN,
@@ -30,9 +31,10 @@ class EMTApi:
 
             colors = {}
             for line in data:
-                code = str(line.get("lineCode"))
-                color = line.get("color", "#757575")
+                code = str(line.get("code"))                     # ← campo real de tu JSON
+                color = "#" + line.get("routeColor", "757575")   # ← routeColor sin almohadilla
                 colors[code] = color
+
 
             print(f"[INFO] Colores cargados: {len(colors)} líneas.")
             return colors
@@ -45,7 +47,6 @@ class EMTApi:
     # Consulta de tiempos de llegada
     # --------------------------------------------------------
     def get_arrivals(self, stop_id: int):
-      
         try:
             url = f"https://www.emtpalma.cat/maas/api/v1/agency/stops/{stop_id}/timestr"
             headers = {
@@ -80,6 +81,7 @@ class EMTApi:
                     mins = max(0, int(seconds / 60))
                     time_str = "YA" if mins == 0 else f"{mins}'"
 
+                    # ✅ Ahora sí obtendrá colores reales
                     color = self.line_colors.get(line, "#757575")
 
                     result.append({
