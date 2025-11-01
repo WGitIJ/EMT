@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QPushButton, QMessageBox, QLabel, QVBoxLayout, QWidget
 from PyQt6.QtCore import Qt, QDateTime
-from model_window import EMTApi  # ← CORREGIDO: nombre del archivo correcto
+from model.model_window import EMTApi  # ← CORREGIDO: nombre del archivo correcto
 
 
 class BusController:

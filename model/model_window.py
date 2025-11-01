@@ -79,9 +79,9 @@ class EMTApi:
                     seconds = v.get("seconds", 0)
                     mins = max(0, int(seconds / 60))
                     time_str = "YA" if mins == 0 else f"{mins}'"
-    
+
                     color = self.line_colors.get(line, "#757575")
-    
+
                     result.append({
                         "line": line,
                         "color": color,
