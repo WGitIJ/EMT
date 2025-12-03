@@ -10,6 +10,7 @@ class BusController:
         self.model = EMTApi()
         self.recent_stops = []  # historial interno de paradas
         self.setup_connections()
+        self.setup_lines_tab()
 
     # ================================================================
     # Conexión de señales
@@ -17,6 +18,48 @@ class BusController:
     def setup_connections(self):
         self.view.checkButton.clicked.connect(self.on_check_stop)
         self.view.stopLineEdit.returnPressed.connect(self.on_check_stop)
+
+    # ================================================================
+    # Pestaña "Consulta por lineas": cargar todas las paradas
+    # ================================================================
+    def setup_lines_tab(self):
+        # Comprobamos que existen los widgets del tab de líneas
+        if not hasattr(self.view, "scrollArea_2"):
+            return
+
+        stops = self.model.get_all_stops()
+
+        if stops == "token_expired":
+            self.show_message(
+                "Token caducado",
+                "No se puede cargar el listado de paradas porque el token ha caducado.\n"
+                "Actualiza el token en el modelo.",
+                QMessageBox.Icon.Warning,
+            )
+            return
+
+        if stops == "no_internet":
+            # No saturamos al usuario con más mensajes si ya hay problemas de red,
+            # simplemente dejamos la pestaña vacía.
+            return
+
+        container = QWidget()
+        layout = QVBoxLayout(container)
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        layout.setSpacing(4)
+
+        for stop in stops:
+            # Solo mostramos una línea de texto por parada, sin interacción
+            text = f"{stop['id']} - {stop['name']}"
+            label = QLabel(text)
+            label.setWordWrap(True)
+            layout.addWidget(label)
+
+        old_widget = self.view.scrollArea_2.takeWidget()
+        if old_widget:
+            old_widget.deleteLater()
+
+        self.view.scrollArea_2.setWidget(container)
 
     # ================================================================
     # Lógica principal: consultar parada
@@ -30,7 +73,14 @@ class BusController:
         stop_id = int(stop_text)
         self.add_recent(stop_id)
 
-        self.view.timeLabel.setText("Consultando datos...")
+        # Nombre descriptivo de la parada (si se puede obtener)
+        stop_name = self.model.get_stop_name(stop_id)
+        if stop_name:
+            stop_info = f"Parada {stop_id} - {stop_name}"
+        else:
+            stop_info = f"Parada {stop_id}"
+
+        self.view.timeLabel.setText(f"{stop_info} | Consultando datos...")
         arrivals = self.model.get_arrivals(stop_id)
 
         # Manejo de errores
@@ -50,7 +100,7 @@ class BusController:
         # Mostrar resultados
         self.display_arrivals(arrivals)
         now = QDateTime.currentDateTime().toString("dd/MM/yyyy hh:mm:ss")
-        self.view.timeLabel.setText(f"Última actualización: {now}")
+        self.view.timeLabel.setText(f"{stop_info} | Última actualización: {now}")
 
     # ================================================================
     # Historial de paradas

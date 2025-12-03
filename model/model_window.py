@@ -8,6 +8,8 @@ class EMTApi:
 
     def __init__(self):
         self.line_colors = self.load_line_colors()
+        # Caché opcional de paradas: id -> nombre
+        self._stops_by_id = None
 
     # --------------------------------------------------------
     # Carga de colores de líneas
@@ -35,13 +37,80 @@ class EMTApi:
                 color = "#" + line.get("routeColor", "757575")   # ← routeColor sin almohadilla
                 colors[code] = color
 
-
-            print(f"[INFO] Colores cargados: {len(colors)} líneas.")
             return colors
 
         except Exception as e:
             print(f"[ERROR] No se pudieron cargar colores: {e}")
             return {}
+
+    # --------------------------------------------------------
+    # Listado de todas las paradas
+    # --------------------------------------------------------
+    def get_all_stops(self):
+        try:
+            url = "https://www.emtpalma.cat/maas/api/v1/agency/lines/"
+            headers = {
+                "accept": "*/*",
+                "authorization": self.TOKEN,
+                "user-agent": "Mozilla/5.0",
+            }
+
+            r = requests.get(url, headers=headers, timeout=15)
+
+            if r.status_code == 401:
+                return "token_expired"
+
+            if not r.ok:
+                return "no_internet"
+
+            data = r.json()
+            if not isinstance(data, list):
+                return "no_internet"
+
+            stops = []
+            for s in data:
+                # Algunos JSON usan 'code', otros 'stopCode' o 'id'
+                raw_id = s.get("code") or s.get("stopCode") or s.get("id")
+                name = s.get("name") or s.get("description") or "Sin nombre"
+
+                if raw_id is None:
+                    continue
+
+                stop_id = str(raw_id)
+                stops.append({"id": stop_id, "name": name})
+
+            # Actualizamos la caché de paradas para búsquedas rápidas por id
+            self._stops_by_id = {s["id"]: s["name"] for s in stops}
+
+            return stops
+
+        except requests.exceptions.ConnectionError:
+            return "no_internet"
+        except requests.exceptions.Timeout:
+            return "no_internet"
+        except Exception as e:
+            print(f"[ERROR get_all_stops] {e}")
+            return "no_internet"
+
+    # --------------------------------------------------------
+    # Obtener nombre de una parada concreta
+    # --------------------------------------------------------
+    def get_stop_name(self, stop_id: int | str):
+        """
+        Devuelve el nombre de la parada (str) o None si no se encuentra
+        o si hubo algún problema al cargar los datos.
+        """
+        # Aseguramos que la caché está cargada
+        if self._stops_by_id is None:
+            stops = self.get_all_stops()
+            if isinstance(stops, str):
+                # "no_internet" / "token_expired"
+                return None
+
+        if self._stops_by_id is None:
+            return None
+
+        return self._stops_by_id.get(str(stop_id))
 
     # --------------------------------------------------------
     # Consulta de tiempos de llegada
