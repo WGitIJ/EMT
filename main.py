@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from controller.controller_window import BusController  # ← Descomentado y corregido
-from view.main_window import Ui_MainWindow  # ← Asegúrate de que esté en la misma carpeta
+from view.uiEMT import Ui_MainWindow  # ← Asegúrate de que esté en la misma carpeta
 
 
 class MainWindow(QMainWindow):
