@@ -3,6 +3,14 @@
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
+try:
+    # Vista web para el mapa
+    from PyQt6.QtWebEngineWidgets import QWebEngineView
+    HAS_WEBENGINE = True
+except ImportError:
+    QWebEngineView = None
+    HAS_WEBENGINE = False
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -11,12 +19,26 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
 
-        # === Main horizontal layout ===
-        self.horizontalLayout = QtWidgets.QHBoxLayout(self.centralwidget)
+        # === Layout principal con pestañas ===
+        self.mainLayout = QtWidgets.QVBoxLayout(self.centralwidget)
+        self.mainLayout.setObjectName("mainLayout")
+
+        self.tabWidget = QtWidgets.QTabWidget(parent=self.centralwidget)
+        self.tabWidget.setObjectName("tabWidget")
+        self.mainLayout.addWidget(self.tabWidget)
+
+        # =========================
+        # TAB 1: PARADAS
+        # =========================
+        self.tabParadas = QtWidgets.QWidget()
+        self.tabParadas.setObjectName("tabParadas")
+
+        # Layout horizontal dentro del tab de paradas
+        self.horizontalLayout = QtWidgets.QHBoxLayout(self.tabParadas)
         self.horizontalLayout.setObjectName("horizontalLayout")
 
         # === LEFT PANEL ===
-        self.leftWidget = QtWidgets.QWidget(parent=self.centralwidget)
+        self.leftWidget = QtWidgets.QWidget(parent=self.tabParadas)
         self.leftLayout = QtWidgets.QVBoxLayout(self.leftWidget)
         self.leftLayout.setObjectName("leftLayout")
 
@@ -61,7 +83,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addWidget(self.leftWidget)
 
         # === RIGHT PANEL ===
-        self.rightWidget = QtWidgets.QWidget(parent=self.centralwidget)
+        self.rightWidget = QtWidgets.QWidget(parent=self.tabParadas)
         self.rightLayout = QtWidgets.QVBoxLayout(self.rightWidget)
         self.rightLayout.setObjectName("rightLayout")
 
@@ -83,6 +105,31 @@ class Ui_MainWindow(object):
         self.rightLayout.addWidget(self.scrollArea)
 
         self.horizontalLayout.addWidget(self.rightWidget)
+
+        # Añadir tab de paradas al QTabWidget
+        self.tabWidget.addTab(self.tabParadas, "")
+
+        # =========================
+        # TAB 2: MAPA
+        # =========================
+        self.tabMapa = QtWidgets.QWidget()
+        self.tabMapa.setObjectName("tabMapa")
+        self.mapLayout = QtWidgets.QVBoxLayout(self.tabMapa)
+        self.mapLayout.setObjectName("mapLayout")
+
+        if HAS_WEBENGINE and QWebEngineView is not None:
+            self.mapView = QWebEngineView(parent=self.tabMapa)
+            self.mapView.setObjectName("mapView")
+            # URL del mapa de EMT Palma (se puede cambiar por otra)
+            self.mapView.setUrl(QtCore.QUrl("https://www.emtpalma.cat/es/lineas"))
+            self.mapLayout.addWidget(self.mapView)
+        else:
+            self.mapFallbackLabel = QtWidgets.QLabel(parent=self.tabMapa)
+            self.mapFallbackLabel.setObjectName("mapFallbackLabel")
+            self.mapFallbackLabel.setWordWrap(True)
+            self.mapLayout.addWidget(self.mapFallbackLabel)
+
+        self.tabWidget.addTab(self.tabMapa, "")
 
         MainWindow.setCentralWidget(self.centralwidget)
 
@@ -106,3 +153,13 @@ class Ui_MainWindow(object):
         self.checkButton.setText(_translate("MainWindow", "Consultar parada"))
         self.historyLabel.setText(_translate("MainWindow", "Historial:"))
         self.timeLabel.setText(_translate("MainWindow", "Última actualización: -"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabParadas), _translate("MainWindow", "Paradas"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabMapa), _translate("MainWindow", "Mapa"))
+        if hasattr(self, "mapFallbackLabel"):
+            self.mapFallbackLabel.setText(
+                _translate(
+                    "MainWindow",
+                    "Para ver el mapa incrustado necesitas instalar el paquete PyQt6-WebEngine.\n"
+                    "Ejemplo: pip install PyQt6-WebEngine",
+                )
+            )
