@@ -72,12 +72,22 @@ class EMTApi:
                 # Algunos JSON usan 'code', otros 'stopCode' o 'id'
                 raw_id = s.get("code") or s.get("stopCode") or s.get("id")
                 name = s.get("name") or s.get("description") or "Sin nombre"
+                
+                # Buscar el stopId que se necesita para la otra API
+                stop_id_value = s.get("stopId") or s.get("stop_id") or s.get("id") or raw_id
 
                 if raw_id is None:
                     continue
 
-                stop_id = str(raw_id)
-                stops.append({"id": stop_id, "name": name})
+                line_code = str(raw_id)
+                # Obtener el color de la línea usando el código
+                color = self.line_colors.get(line_code, "#757575")  # Color por defecto gris
+                stops.append({
+                    "id": line_code,  # Código de la línea para mostrar
+                    "name": name,
+                    "color": color,
+                    "stopId": str(stop_id_value) if stop_id_value else line_code  # stopId para la API
+                })
 
             # Actualizamos la caché de paradas para búsquedas rápidas por id
             self._stops_by_id = {s["id"]: s["name"] for s in stops}
@@ -168,4 +178,105 @@ class EMTApi:
             return "no_internet"
         except Exception as e:
             print(f"[ERROR get_arrivals] {e}")
+            return "no_internet"
+
+    # --------------------------------------------------------
+    # Obtener paradas de una línea específica
+    # --------------------------------------------------------
+    def get_line_stops(self, stop_id: int | str):
+        """
+        Obtiene las paradas de una línea específica usando la API.
+        stop_id: El stopId obtenido de la respuesta de get_all_stops(), no el código de la línea.
+        Devuelve una lista de paradas o un código de error.
+        """
+        try:
+            headers = {
+                "accept": "*/*",
+                "authorization": self.TOKEN,
+                "user-agent": "Mozilla/5.0"
+            }
+            
+            # Usar el stopId directamente en la URL según el formato proporcionado
+            # El tripId puede ser opcional o podemos intentar obtenerlo primero
+            trip_id = 994  # Valor por defecto del ejemplo
+            
+            # Probar diferentes variaciones de la URL usando stopId
+            url_variations = [
+                f"https://www.emtpalma.cat/maas/api/v1/agency/lines/{stop_id}//stops?tripId={trip_id}&isLine=0&isLineNearStop=0&both=1",
+                f"https://www.emtpalma.cat/maas/api/v1/agency/lines/{stop_id}/stops?tripId={trip_id}&isLine=0&isLineNearStop=0&both=1",
+                f"https://www.emtpalma.cat/maas/api/v1/agency/lines/{stop_id}/stops",
+                f"https://www.emtpalma.cat/maas/api/v1/agency/lines/{stop_id}/stops?tripId={trip_id}",
+            ]
+            
+            for url in url_variations:
+                print(f"[INFO] Intentando URL: {url}")
+                r = requests.get(url, headers=headers, timeout=10)
+                
+                # Token caducado
+                if r.status_code == 401:
+                    print(f"[ERROR get_line_stops] Token caducado. Status: {r.status_code}")
+                    return "token_expired"
+                
+                # Si funciona, usar esta URL
+                if r.ok:
+                    print(f"[SUCCESS] URL funcionó: {url}")
+                    break
+                else:
+                    print(f"[WARN] URL falló con código {r.status_code}: {url}")
+                    print(f"[WARN] Response: {r.text[:200]}")
+            else:
+                # Si ninguna URL funcionó
+                print(f"[ERROR get_line_stops] Todas las URLs fallaron. Último código: {r.status_code}")
+                print(f"[ERROR get_line_stops] Última respuesta: {r.text[:200]}")
+                return "no_internet"
+
+            # Si llegamos aquí, r.ok es True
+            try:
+                data = r.json()
+            except Exception as e:
+                print(f"[ERROR get_line_stops] No se pudo parsear JSON: {e}")
+                print(f"[ERROR get_line_stops] Response text: {r.text[:500]}")
+                return "no_internet"
+            
+            # La respuesta puede ser un diccionario o una lista
+            if isinstance(data, dict):
+                # Si es un diccionario, buscar la clave que contiene las paradas
+                if "stops" in data:
+                    data = data["stops"]
+                elif "data" in data:
+                    data = data["data"]
+                else:
+                    print(f"[ERROR get_line_stops] Formato de respuesta inesperado: {list(data.keys())}")
+                    return "no_internet"
+            
+            if not isinstance(data, list):
+                print(f"[ERROR get_line_stops] La respuesta no es una lista: {type(data)}")
+                return "no_internet"
+
+            stops = []
+            for stop in data:
+                stop_id = stop.get("id") or stop.get("stopId") or stop.get("code") or stop.get("stopCode")
+                name = stop.get("name") or stop.get("description") or stop.get("stopName") or "Sin nombre"
+                
+                if stop_id is None:
+                    continue
+                
+                stops.append({
+                    "id": str(stop_id),
+                    "name": name
+                })
+
+            print(f"[INFO get_line_stops] Se encontraron {len(stops)} paradas para stopId {stop_id}")
+            return stops
+
+        except requests.exceptions.ConnectionError as e:
+            print(f"[ERROR get_line_stops] Error de conexión: {e}")
+            return "no_internet"
+        except requests.exceptions.Timeout as e:
+            print(f"[ERROR get_line_stops] Timeout: {e}")
+            return "no_internet"
+        except Exception as e:
+            print(f"[ERROR get_line_stops] Error inesperado: {e}")
+            import traceback
+            traceback.print_exc()
             return "no_internet"

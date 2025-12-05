@@ -7,90 +7,72 @@
 
 
 from PyQt6 import QtCore, QtGui, QtWidgets
+from view.stop_tab import StopTab
+from view.lines_tab import LinesTab
 
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(777, 608)
+        # Estilo de la ventana principal - Tema oscuro
+        MainWindow.setStyleSheet("""
+            QMainWindow {
+                background-color: #1e1e1e;
+            }
+            QTabWidget::pane {
+                background-color: #1e1e1e;
+                border: none;
+            }
+            QTabBar::tab {
+                background-color: #2d2d2d;
+                color: #e0e0e0;
+                padding: 10px 20px;
+                margin-right: 2px;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
+            }
+            QTabBar::tab:selected {
+                background-color: #3a3a3a;
+                color: #ffffff;
+            }
+            QTabBar::tab:hover {
+                background-color: #333333;
+            }
+        """)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
+        self.centralwidget.setStyleSheet("background-color: #1e1e1e;")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout.setObjectName("verticalLayout")
         self.tabWidget = QtWidgets.QTabWidget(parent=self.centralwidget)
         self.tabWidget.setObjectName("tabWidget")
-        self.tab_3 = QtWidgets.QWidget()
-        self.tab_3.setObjectName("tab_3")
-        self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.tab_3)
-        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        self.leftLayout = QtWidgets.QVBoxLayout()
-        self.leftLayout.setObjectName("leftLayout")
-        self.titleLabel = QtWidgets.QLabel(parent=self.tab_3)
-        font = QtGui.QFont()
-        font.setPointSize(20)
-        font.setBold(True)
-        self.titleLabel.setFont(font)
-        self.titleLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.titleLabel.setObjectName("titleLabel")
-        self.leftLayout.addWidget(self.titleLabel)
-        self.stopLineEdit = QtWidgets.QLineEdit(parent=self.tab_3)
-        self.stopLineEdit.setObjectName("stopLineEdit")
-        self.leftLayout.addWidget(self.stopLineEdit)
-        self.checkButton = QtWidgets.QPushButton(parent=self.tab_3)
-        self.checkButton.setObjectName("checkButton")
-        self.leftLayout.addWidget(self.checkButton)
-        self.historyLabel = QtWidgets.QLabel(parent=self.tab_3)
-        font = QtGui.QFont()
-        font.setPointSize(10)
-        self.historyLabel.setFont(font)
-        self.historyLabel.setObjectName("historyLabel")
-        self.leftLayout.addWidget(self.historyLabel)
-        self.recentStopsLayout = QtWidgets.QGridLayout()
-        self.recentStopsLayout.setObjectName("recentStopsLayout")
-        self.leftLayout.addLayout(self.recentStopsLayout)
-        spacerItem = QtWidgets.QSpacerItem(48, 371, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
-        self.leftLayout.addItem(spacerItem)
-        self.horizontalLayout_2.addLayout(self.leftLayout)
-        self.rightLayout = QtWidgets.QVBoxLayout()
-        self.rightLayout.setObjectName("rightLayout")
-        self.timeLabel = QtWidgets.QLabel(parent=self.tab_3)
-        self.timeLabel.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
-        self.timeLabel.setObjectName("timeLabel")
-        self.rightLayout.addWidget(self.timeLabel)
-        self.scrollArea = QtWidgets.QScrollArea(parent=self.tab_3)
-        self.scrollArea.setWidgetResizable(True)
-        self.scrollArea.setObjectName("scrollArea")
-        self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 360, 463))
-        self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
-        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
-        self.rightLayout.addWidget(self.scrollArea)
-        self.horizontalLayout_2.addLayout(self.rightLayout)
+        
+        # Crear pestaña de paradas usando componente modular
+        self.stop_tab_component = StopTab(self.centralwidget)
+        self.tab_3 = self.stop_tab_component.tab
+        
+        # Exponer los widgets necesarios para compatibilidad con el controlador
+        self.titleLabel = self.stop_tab_component.titleLabel
+        self.stopLineEdit = self.stop_tab_component.stopLineEdit
+        self.checkButton = self.stop_tab_component.checkButton
+        self.historyLabel = self.stop_tab_component.historyLabel
+        self.recentStopsLayout = self.stop_tab_component.recentStopsLayout
+        self.timeLabel = self.stop_tab_component.timeLabel
+        self.scrollArea = self.stop_tab_component.scrollArea
+        
         self.tabWidget.addTab(self.tab_3, "")
-        self.tab_4 = QtWidgets.QWidget()
-        self.tab_4.setObjectName("tab_4")
-        self.label = QtWidgets.QLabel(parent=self.tab_4)
-        self.label.setGeometry(QtCore.QRect(8, 5, 371, 41))
-        self.label.setObjectName("label")
-        self.label_2 = QtWidgets.QLabel(parent=self.tab_4)
-        self.label_2.setGeometry(QtCore.QRect(390, 0, 361, 51))
-        self.label_2.setObjectName("label_2")
-        self.scrollArea_2 = QtWidgets.QScrollArea(parent=self.tab_4)
-        self.scrollArea_2.setGeometry(QtCore.QRect(10, 50, 361, 451))
-        self.scrollArea_2.setWidgetResizable(True)
-        self.scrollArea_2.setObjectName("scrollArea_2")
-        self.scrollAreaWidgetContents_2 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 359, 449))
-        self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
-        self.scrollArea_2.setWidget(self.scrollAreaWidgetContents_2)
-        self.scrollArea_3 = QtWidgets.QScrollArea(parent=self.tab_4)
-        self.scrollArea_3.setGeometry(QtCore.QRect(380, 50, 361, 451))
-        self.scrollArea_3.setWidgetResizable(True)
-        self.scrollArea_3.setObjectName("scrollArea_3")
-        self.scrollAreaWidgetContents_3 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_3.setGeometry(QtCore.QRect(0, 0, 359, 449))
-        self.scrollAreaWidgetContents_3.setObjectName("scrollAreaWidgetContents_3")
-        self.scrollArea_3.setWidget(self.scrollAreaWidgetContents_3)
+        
+        # Crear pestaña de líneas usando componente modular
+        self.lines_tab_component = LinesTab(self.centralwidget)
+        self.tab_4 = self.lines_tab_component.tab
+        
+        # Exponer los widgets necesarios para compatibilidad con el controlador
+        self.label = self.lines_tab_component.label
+        self.label_2 = self.lines_tab_component.label_2
+        self.scrollArea_2 = self.lines_tab_component.scrollArea_2
+        self.scrollArea_3 = self.lines_tab_component.scrollArea_3
+        
         self.tabWidget.addTab(self.tab_4, "")
         self.verticalLayout.addWidget(self.tabWidget)
         MainWindow.setCentralWidget(self.centralwidget)
@@ -109,12 +91,17 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "EMT Palma - Bus Arrivals"))
-        self.titleLabel.setText(_translate("MainWindow", "EMT PALMA"))
-        self.stopLineEdit.setPlaceholderText(_translate("MainWindow", "Introduce el número de parada"))
-        self.checkButton.setText(_translate("MainWindow", "Consultar parada"))
-        self.historyLabel.setText(_translate("MainWindow", "Historial:"))
-        self.timeLabel.setText(_translate("MainWindow", "Última actualización: -"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Paso por Parada"))
-        self.label.setText(_translate("MainWindow", "Lineas"))
-        self.label_2.setText(_translate("MainWindow", "Sublineas y Direccion"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("MainWindow", "Consulta por lineas"))
+        
+        # Traducir componentes modulares
+        self.stop_tab_component.retranslate_ui()
+        self.lines_tab_component.retranslate_ui()
+        
+        # Traducir textos de las pestañas
+        self.tabWidget.setTabText(
+            self.tabWidget.indexOf(self.tab_3), 
+            _translate("MainWindow", "Paso por Parada")
+        )
+        self.tabWidget.setTabText(
+            self.tabWidget.indexOf(self.tab_4), 
+            _translate("MainWindow", "Consulta por lineas")
+        )
