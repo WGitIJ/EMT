@@ -69,24 +69,23 @@ class EMTApi:
 
             stops = []
             for s in data:
-                # Algunos JSON usan 'code', otros 'stopCode' o 'id'
-                raw_id = s.get("code") or s.get("stopCode") or s.get("id")
+                # El 'code' es lo que se muestra (A1, A2, etc.)
+                line_code = s.get("code")
+                # El 'id' es el identificador numérico para las APIs
+                line_id = s.get("id")
                 name = s.get("name") or s.get("description") or "Sin nombre"
-                
-                # Buscar el stopId que se necesita para la otra API
-                stop_id_value = s.get("stopId") or s.get("stop_id") or s.get("id") or raw_id
 
-                if raw_id is None:
+                if line_code is None or line_id is None:
                     continue
 
-                line_code = str(raw_id)
+                line_code_str = str(line_code)
                 # Obtener el color de la línea usando el código
-                color = self.line_colors.get(line_code, "#757575")  # Color por defecto gris
+                color = self.line_colors.get(line_code_str, "#757575")  # Color por defecto gris
                 stops.append({
-                    "id": line_code,  # Código de la línea para mostrar
+                    "id": line_code_str,  # Código de la línea para mostrar
                     "name": name,
                     "color": color,
-                    "stopId": str(stop_id_value) if stop_id_value else line_code  # stopId para la API
+                    "lineId": str(line_id)  # ID numérico para APIs de sublíneas/paradas
                 })
 
             # Actualizamos la caché de paradas para búsquedas rápidas por id
@@ -280,3 +279,107 @@ class EMTApi:
             import traceback
             traceback.print_exc()
             return "no_internet"
+
+    # --------------------------------------------------------
+    # Obtener sublíneas de una línea específica
+    # --------------------------------------------------------
+    def get_line_sublines(self, line_id: int | str):
+        """
+        Obtiene las sublíneas de una línea específica usando la API.
+        Devuelve una lista de sublíneas o un código de error.
+        """
+        try:
+            headers = {
+                "accept": "*/*",
+                "authorization": self.TOKEN,
+                "user-agent": "Mozilla/5.0"
+            }
+
+            # URL para obtener sublíneas
+            url = f"https://www.emtpalma.cat/maas/api/v1/agency/lines/{line_id}/sublines"
+            print(f"[INFO] Intentando obtener sublíneas de la línea {line_id}: {url}")
+
+            r = requests.get(url, headers=headers, timeout=10)
+
+            # Token caducado
+            if r.status_code == 401:
+                print(f"[ERROR get_line_sublines] Token caducado. Status: {r.status_code}")
+                return "token_expired"
+
+            # Error de red o servidor
+            if not r.ok:
+                print(f"[ERROR get_line_sublines] Error HTTP {r.status_code}. URL: {url}")
+                print(f"[ERROR get_line_sublines] Response: {r.text[:200]}")
+                return "no_internet"
+
+            data = r.json()
+
+            # La respuesta puede ser un diccionario o una lista
+            if isinstance(data, dict):
+                # Si es un diccionario, buscar la clave que contiene las sublíneas
+                if "sublines" in data:
+                    data = data["sublines"]
+                elif "data" in data:
+                    data = data["data"]
+                else:
+                    print(f"[ERROR get_line_sublines] Formato de respuesta inesperado: {list(data.keys())}")
+                    return "no_internet"
+
+            if not isinstance(data, list):
+                print(f"[ERROR get_line_sublines] La respuesta no es una lista: {type(data)}")
+                return "no_internet"
+
+            sublines = []
+            for subline in data:
+                # Según la respuesta real: subLineId, longName, shortName, etc.
+                subline_id = subline.get("subLineId") or subline.get("id") or subline.get("sublineId")
+                long_name = subline.get("longName")
+                short_name = subline.get("shortName")
+                name = long_name or short_name or subline.get("name") or "Sin nombre"
+                direction = subline.get("direction") or subline.get("destiny") or "Sin dirección"
+
+                if subline_id is None:
+                    continue
+
+                sublines.append({
+                    "id": str(subline_id),
+                    "name": name,
+                    "direction": direction
+                })
+
+            print(f"[INFO get_line_sublines] Se encontraron {len(sublines)} sublíneas para la línea {line_id}")
+            return sublines
+
+        except requests.exceptions.ConnectionError as e:
+            print(f"[ERROR get_line_sublines] Error de conexión: {e}")
+            return "no_internet"
+        except requests.exceptions.Timeout as e:
+            print(f"[ERROR get_line_sublines] Timeout: {e}")
+            return "no_internet"
+        except Exception as e:
+            print(f"[ERROR get_line_sublines] Error inesperado: {e}")
+            import traceback
+            traceback.print_exc()
+            return "no_internet"
+
+    # --------------------------------------------------------
+    # Obtener paradas de una sublínea específica
+    # --------------------------------------------------------
+    def get_subline_stops(self, subline_id):
+        import requests
+        url = f"https://www.emtpalma.cat/maas/api/v1/agency/sublines/{subline_id}/stops"
+        headers = {
+            "accept": "*/*",
+            "authorization": self.TOKEN,
+            "user-agent": "Mozilla/5.0"
+        }
+        r = requests.get(url, headers=headers, timeout=10)
+        if not r.ok:
+            return []
+        try:
+            data = r.json()
+        except Exception:
+            return []
+        if isinstance(data, dict):
+            data = data.get("stops") or data.get("data") or []
+        return data

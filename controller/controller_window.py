@@ -88,10 +88,10 @@ class BusController:
                 f"border: 3px solid #666666;"
                 f"}}"
             )
-            # Conectar el botón para mostrar las paradas de la línea
-            # Usar stopId si está disponible, sino usar el código de la línea
-            stop_id = stop.get('stopId', stop['id'])
-            circle_button.clicked.connect(lambda checked, sid=stop_id: self.on_line_clicked(sid))
+            # Conectar el botón para mostrar las sublíneas de la línea
+            # Usar lineId (ID numérico) para la API de sublíneas
+            line_id = stop.get('lineId', stop['id'])
+            circle_button.clicked.connect(lambda checked, lid=line_id: self.on_line_clicked(lid))
             stop_layout.addWidget(circle_button)
             
             # Nombre de la línea con estilo mejorado - Tema oscuro
@@ -119,36 +119,36 @@ class BusController:
     # ================================================================
     # Manejo de clic en línea: mostrar paradas de la línea
     # ================================================================
-    def on_line_clicked(self, stop_id: str):
-        """Muestra las paradas de una línea en scrollArea_3"""
-        print(f"[INFO] Clic en línea con stopId: {stop_id}")
-        
+    def on_line_clicked(self, line_id: str):
+        """Muestra las sublíneas de una línea y las hace pulsables"""
+        print(f"[INFO] Clic en línea con ID: {line_id}")
+
         # Mostrar mensaje de carga
         loading_container = QWidget()
         loading_layout = QVBoxLayout(loading_container)
-        loading_label = QLabel(f"Cargando paradas...")
+        loading_label = QLabel("Cargando sublíneas...")
         loading_label.setStyleSheet("font-size: 12px; color: #ffffff; padding: 10px;")
         loading_layout.addWidget(loading_label)
-        
+
         old_widget = self.view.scrollArea_3.takeWidget()
         if old_widget:
             old_widget.deleteLater()
         self.view.scrollArea_3.setWidget(loading_container)
-        
-        # Obtener las paradas de la línea usando el stopId
-        stops = self.model.get_line_stops(stop_id)
+
+        # Obtener las sublíneas de la línea usando el lineId
+        sublines = self.model.get_line_sublines(line_id)
 
         # Manejo de errores
-        if stops == "no_internet":
+        if sublines == "no_internet":
             self.show_message("Error", f"No se pudo conectar con el servidor.\nRevisa la consola para más detalles.", QMessageBox.Icon.Critical)
             # Mostrar mensaje de error en el scroll
             error_container = QWidget()
             error_layout = QVBoxLayout(error_container)
-            error_label = QLabel("❌ Error al cargar paradas.\nNo se pudo conectar con el servidor.")
+            error_label = QLabel("Error al cargar sublíneas.\nNo se pudo conectar con el servidor.")
             error_label.setStyleSheet("""
                 QLabel {
-                    font-size: 13px; 
-                    color: #e74c3c; 
+                    font-size: 13px;
+                    color: #e74c3c;
                     padding: 15px;
                     background-color: #4a2a2a;
                     border-radius: 8px;
@@ -157,16 +157,16 @@ class BusController:
             error_layout.addWidget(error_label)
             self.view.scrollArea_3.setWidget(error_container)
             return
-        elif stops == "token_expired":
+        elif sublines == "token_expired":
             self.show_message("Error", "Token caducado. Necesitas actualizarlo en el modelo.", QMessageBox.Icon.Critical)
             # Mostrar mensaje de error en el scroll
             error_container = QWidget()
             error_layout = QVBoxLayout(error_container)
-            error_label = QLabel("⚠️ Error: Token caducado.\nActualiza el token en el modelo.")
+            error_label = QLabel("Error: Token caducado.\nActualiza el token en el modelo.")
             error_label.setStyleSheet("""
                 QLabel {
-                    font-size: 13px; 
-                    color: #e74c3c; 
+                    font-size: 13px;
+                    color: #e74c3c;
                     padding: 15px;
                     background-color: #4a2a2a;
                     border-radius: 8px;
@@ -184,68 +184,61 @@ class BusController:
         layout.setSpacing(10)
         layout.setContentsMargins(10, 10, 10, 10)
 
-        if not stops:
+        if not sublines:
             # Si no hay paradas, mostrar un mensaje con estilo mejorado - Tema oscuro
-            no_stops_label = QLabel("No se encontraron paradas para esta línea.")
-            no_stops_label.setStyleSheet("""
-                QLabel {
-                    font-size: 13px; 
-                    color: #ffffff; 
-                    padding: 15px;
-                    background-color: #3a3a3a;
-                    border-radius: 8px;
-                }
+            no_sublines_label = QLabel("No se encontraron sublíneas para esta línea.")
+            no_sublines_label.setStyleSheet("""
+                QLabel { font-size: 13px; color: #ffffff; padding: 15px; background-color: #3a3a3a; border-radius: 8px; }
             """)
-            layout.addWidget(no_stops_label)
+            layout.addWidget(no_sublines_label)
         else:
-            # Mostrar cada parada con estilo mejorado - Tema oscuro
-            for stop in stops:
-                stop_widget = QWidget()
-                stop_widget.setStyleSheet("""
-                    QWidget {
-                        background-color: #3a3a3a;
-                        border-radius: 8px;
-                        padding: 5px;
-                    }
-                """)
-                stop_layout = QHBoxLayout(stop_widget)
-                stop_layout.setContentsMargins(12, 10, 12, 10)
-                stop_layout.setSpacing(12)
-
-                # Badge con el ID de la parada
-                id_label = QLabel(f"#{stop['id']}")
-                id_label.setStyleSheet("""
-                    QLabel {
-                        font-size: 12px;
-                        font-weight: bold;
-                        color: white;
+            for subline in sublines:
+                btn = QPushButton(f"Sublínea {subline['id']}: {subline['name']}")
+                btn.setStyleSheet("""
+                    QPushButton {
                         background-color: #3498db;
-                        padding: 6px 12px;
-                        border-radius: 12px;
-                        min-width: 50px;
-                    }
-                """)
-                id_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                stop_layout.addWidget(id_label)
-
-                # Nombre de la parada con estilo mejorado - Tema oscuro
-                stop_label = QLabel(stop['name'])
-                stop_label.setWordWrap(True)
-                stop_label.setStyleSheet("""
-                    QLabel {
+                        color: #fff;
+                        border-radius: 8px;
+                        padding: 8px 16px;
+                        margin-bottom: 5px;
                         font-size: 13px;
-                        color: #ffffff;
-                        padding: 5px;
-                        font-weight: 500;
+                        font-weight: bold;
+                    }
+                    QPushButton:hover {
+                        background-color: #217dbb;
                     }
                 """)
-                stop_layout.addWidget(stop_label)
-
-                layout.addWidget(stop_widget)
-
-        # Actualizar el scroll con las paradas
+                # Pasa solo el id de la línea principal
+                btn.clicked.connect(lambda checked, lid=line_id: self.on_subline_clicked(lid))
+                layout.addWidget(btn)
         self.view.scrollArea_3.setWidget(container)
-        print(f"[INFO] Se mostraron {len(stops) if stops else 0} paradas")
+        print(f"[INFO] Se mostraron {len(sublines) if sublines else 0} sublíneas")
+
+    def on_subline_clicked(self, line_id):
+        """Abre un mapa Folium usando solo las paradas de la línea principal (API lines/{lineId}/stops)"""
+        print(f"[INFO] Mostrar ruta principal de línea: {line_id}")
+        stops = self.model.get_line_stops(line_id)
+        if not stops or not isinstance(stops, list):
+            self.show_message("Error", "No se pudo obtener la ruta de la línea principal.")
+            return
+        import folium
+        import webbrowser
+        points = []
+        m = folium.Map(location=[39.5696, 2.6502], zoom_start=13, tiles="CartoDB dark_matter")
+        for parada in stops:
+            lat = parada.get("lat") or parada.get("latitude")
+            lon = parada.get("lon") or parada.get("longitude")
+            nombre = parada.get("name", "Sin nombre")
+            if lat and lon:
+                points.append((lat, lon))
+                folium.Marker([lat, lon], tooltip=nombre, popup=nombre, icon=folium.Icon(color="blue")).add_to(m)
+        if points:
+            folium.PolyLine(points, color="red", weight=4, opacity=0.7).add_to(m)
+            m.fit_bounds([points[0], points[-1]])
+            m.save("ruta_linea_principal.html")
+            webbrowser.open_new_tab("ruta_linea_principal.html")
+        else:
+            self.show_message("Sin datos","No hay puntos geográficos en la línea.")
 
     # ================================================================
     # Lógica principal: consultar parada
