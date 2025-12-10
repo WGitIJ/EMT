@@ -34,8 +34,10 @@ class MainWindow(QMainWindow):
         # Initialize controller with UI reference
         self.controller = BusController(view=self.ui)
 
-        # Configure window
+        # Configure window - responsive
         self.setWindowTitle(self.WINDOW_TITLE)
+        self.setMinimumSize(700, 500)
+        self.resize(900, 650)
 
 
 def main() -> None:

@@ -203,19 +203,6 @@ class EMTApi:
         return self.lines_data if self.lines_data else "no_data"
 
     def get_line_sublines(self, line_id: int | str) -> list | str:
-        """
-        Retrieve sublines for a specific bus line.
-
-        Args:
-            line_id: The line identifier.
-
-        Returns:
-            list: List of subline dictionaries with keys:
-                 - 'id': Subline identifier
-                 - 'name': Subline name
-                 - 'direction': Direction/destination
-            str: Error code if request fails.
-        """
         try:
             endpoint = f"{self.BASE_URL}/agency/lines/{line_id}/sublines"
             headers = self._get_headers()

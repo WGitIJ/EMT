@@ -7,10 +7,11 @@ It manages user interactions, API communication, and data presentation.
 
 from typing import List, Dict, Any
 
-from PyQt6.QtWidgets import QPushButton, QMessageBox, QLabel, QVBoxLayout, QHBoxLayout, QWidget
+from PyQt6.QtWidgets import QPushButton, QMessageBox, QLabel, QVBoxLayout, QHBoxLayout, QWidget, QSizePolicy, QMainWindow
 from PyQt6.QtCore import Qt, QDateTime
 
 from model.model_window import EMTApi
+from view.simple_window import SimpleWindow
 
 
 class BusController:
@@ -61,61 +62,70 @@ class BusController:
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        layout.setSpacing(12)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(8)
+        layout.setContentsMargins(8, 8, 8, 8)
 
         for line_code, line_info in lines_data.items():
-            # Create line display widget
+            # Create line display widget - responsive
             line_widget = QWidget()
             line_widget.setStyleSheet("""
                 QWidget {
                     background-color: #3a3a3a;
                     border-radius: 8px;
-                    padding: 5px;
+                    padding: 4px;
+                    margin: 2px;
                 }
             """)
+            line_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             line_layout = QHBoxLayout(line_widget)
-            line_layout.setContentsMargins(12, 10, 12, 10)
-            line_layout.setSpacing(12)
+            line_layout.setContentsMargins(8, 6, 8, 6)
+            line_layout.setSpacing(10)
 
-            # Line number button with color
+            # Line number button with color - responsive
             line_color = line_info.get('color', '#757575')
             line_button = QPushButton(line_code)
-            line_button.setFixedSize(50, 50)
+            line_button.setMinimumSize(45, 45)
+            line_button.setMaximumSize(60, 60)
+            line_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             line_button.setStyleSheet(
                 f"QPushButton {{"
                 f"background-color: {line_color}; "
                 f"color: white; "
-                f"border-radius: 25px; "
+                f"border-radius: 22px; "
                 f"font-weight: bold; "
-                f"font-size: 16px; "
-                f"border: 3px solid #2d2d2d;"
+                f"font-size: 14px; "
+                f"border: 2px solid #2d2d2d;"
+                f"min-width: 45px; "
+                f"min-height: 45px; "
+                f"max-width: 60px; "
+                f"max-height: 60px;"
                 f"}}"
                 f"QPushButton:hover {{"
                 f"background-color: {line_color}; "
-                f"border: 3px solid #555555;"
-                f"transform: scale(1.05);"
+                f"border: 2px solid #555555;"
                 f"}}"
                 f"QPushButton:pressed {{"
                 f"background-color: {line_color}; "
-                f"border: 3px solid #666666;"
+                f"border: 2px solid #666666;"
                 f"}}"
             )
             line_button.clicked.connect(lambda _, lid=line_code: self.on_line_clicked(lid))
             line_layout.addWidget(line_button)
 
-            # Line name
+            # Line name - responsive
             name_label = QLabel(line_info.get('name', line_code))
             name_label.setWordWrap(True)
             name_label.setStyleSheet("""
                 QLabel {
-                    font-size: 13px;
+                    font-size: 12px;
                     color: #ffffff;
-                    padding: 5px;
+                    padding: 3px 6px;
                     font-weight: 500;
+                    min-height: 15px;
                 }
             """)
-            line_layout.addWidget(name_label)
+            name_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            line_layout.addWidget(name_label, stretch=1)
 
             layout.addWidget(line_widget)
 
@@ -285,6 +295,69 @@ class BusController:
         # Display sublines
         self._display_sublines(sublines, line_id)
 
+    def on_subline_button_clicked(self, line_id: str, subline_id: str, subline_name: str) -> None:
+        """
+        Open hello world window when a subline button is clicked.
+
+        Args:
+            line_id: The line identifier
+            subline_id: The subline identifier
+            subline_name: The subline name
+        """
+        print(f"Opening hello world window for line {line_id}, subline {subline_id}: {subline_name}")
+
+        # Create and show hello world window
+        try:
+            hello_window = self._create_hello_world_window()
+            hello_window.show()
+            print(f"Hello world window opened for subline {subline_id}")
+        except Exception as e:
+            print(f"Error opening hello world window: {e}")
+            self._show_error_message(
+                "Error",
+                f"Unable to open window for subline {subline_id}: {str(e)}",
+                QMessageBox.Icon.Critical
+            )
+
+    def _create_hello_world_window(self):
+        """
+        Create a simple window that displays 'Hola mundo'.
+
+        Returns:
+            QMainWindow: A simple window with hello world message
+        """
+        from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel
+        from PyQt6.QtCore import Qt
+
+        class HelloWorldWindow(QMainWindow):
+            def __init__(self):
+                super().__init__()
+                self.setWindowTitle("Hola Mundo")
+                self.setGeometry(400, 300, 300, 150)
+                self.setMinimumSize(250, 120)
+
+                central_widget = QWidget()
+                self.setCentralWidget(central_widget)
+
+                layout = QVBoxLayout(central_widget)
+                layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+                hello_label = QLabel("Hola mundo")
+                hello_label.setStyleSheet("""
+                    QLabel {
+                        font-size: 24px;
+                        font-weight: bold;
+                        color: #000000;
+                        padding: 20px;
+                    }
+                """)
+                hello_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+                layout.addWidget(hello_label)
+
+        return HelloWorldWindow()
+
+
     def _display_sublines(self, sublines: List[Dict[str, Any]], line_id: str) -> None:
         """
         Display sublines information in the scrollable area.
@@ -327,7 +400,7 @@ class BusController:
                 subline_layout.setContentsMargins(12, 10, 12, 10)
                 subline_layout.setSpacing(12)
 
-                # Subline ID badge
+                # Subline ID badge - responsive
                 id_label = QLabel(f"#{subline['id']}")
                 id_label.setStyleSheet("""
                     QLabel {
@@ -338,17 +411,20 @@ class BusController:
                         padding: 6px 12px;
                         border-radius: 12px;
                         min-width: 50px;
+                        max-width: 80px;
                     }
                 """)
                 id_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                id_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
                 subline_layout.addWidget(id_label)
 
-                # Subline information
+                # Subline information - responsive
                 info_widget = QWidget()
                 info_layout = QVBoxLayout(info_widget)
                 info_layout.setSpacing(2)
+                info_layout.setContentsMargins(0, 0, 0, 0)
 
-                # Subline name
+                # Subline name - responsive
                 name_label = QLabel(subline.get('name', 'Unknown'))
                 name_label.setWordWrap(True)
                 name_label.setStyleSheet("""
@@ -356,11 +432,13 @@ class BusController:
                         font-size: 13px;
                         color: #ffffff;
                         font-weight: 500;
+                        padding: 2px 0px;
                     }
                 """)
+                name_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
                 info_layout.addWidget(name_label)
 
-                # Direction if available
+                # Direction if available - responsive
                 if subline.get('direction'):
                     direction_label = QLabel(f"Direction: {subline['direction']}")
                     direction_label.setStyleSheet("""
@@ -368,11 +446,44 @@ class BusController:
                             font-size: 11px;
                             color: #cccccc;
                             font-style: italic;
+                            padding: 1px 0px;
                         }
                     """)
+                    direction_label.setWordWrap(True)
+                    direction_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
                     info_layout.addWidget(direction_label)
 
-                subline_layout.addWidget(info_widget)
+                info_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+                subline_layout.addWidget(info_widget, stretch=1)
+
+                # Add button to open window - responsive
+                open_button = QPushButton("Abrir")
+                open_button.setFixedHeight(35)
+                open_button.setMinimumWidth(50)
+                open_button.setStyleSheet("""
+                    QPushButton {
+                        background-color: #4CAF50;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        font-size: 11px;
+                        font-weight: bold;
+                    }
+                    QPushButton:hover {
+                        background-color: #45a049;
+                    }
+                    QPushButton:pressed {
+                        background-color: #3d8b40;
+                    }
+                """)
+
+                # Connect button to open window
+                open_button.clicked.connect(
+                    lambda checked, lid=line_id, sid=subline['id'], sname=subline.get('name', 'Unknown'):
+                    self.on_subline_button_clicked(lid, sid, sname)
+                )
+
+                subline_layout.addWidget(open_button)
                 layout.addWidget(subline_widget)
 
         # Replace existing content
@@ -439,22 +550,30 @@ class BusController:
             QWidget: Configured widget block with bus information.
         """
         block = QWidget()
+        block.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout = QVBoxLayout(block)
-        layout.setContentsMargins(12, 8, 12, 8)
+        layout.setContentsMargins(10, 6, 10, 6)
+        layout.setSpacing(4)
 
-        # Line number with color
+        # Line number with color - responsive
         line_label = QLabel(f"<b>Line {bus['line']}</b>")
         line_label.setStyleSheet(
-            f"color: {bus['color']}; font-size: 18px; font-weight: bold;"
+            f"color: {bus['color']}; font-size: 16px; font-weight: bold; padding: 2px 0px;"
         )
+        line_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        line_label.setWordWrap(True)
 
-        # Destination
+        # Destination - responsive
         dest_label = QLabel(bus['dest'])
-        dest_label.setStyleSheet("font-size: 14px; color: #555;")
+        dest_label.setStyleSheet("font-size: 13px; color: #666666; padding: 1px 0px;")
+        dest_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        dest_label.setWordWrap(True)
 
-        # Arrival time
+        # Arrival time - responsive
         time_label = QLabel(bus['time'])
-        time_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #d32f2f;")
+        time_label.setStyleSheet("font-size: 15px; font-weight: bold; color: #d32f2f; padding: 2px 0px;")
+        time_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        time_label.setWordWrap(True)
 
         layout.addWidget(line_label)
         layout.addWidget(dest_label)
