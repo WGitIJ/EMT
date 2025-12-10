@@ -11,7 +11,6 @@ from PyQt6.QtWidgets import QPushButton, QMessageBox, QLabel, QVBoxLayout, QHBox
 from PyQt6.QtCore import Qt, QDateTime
 
 from model.model_window import EMTApi
-from view.simple_window import SimpleWindow
 
 
 class BusController:
