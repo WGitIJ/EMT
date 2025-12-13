@@ -33,6 +33,8 @@ class BusController:
         self.view = view
         self.model = EMTApi()
         self.recent_stops: List[int] = []
+        self._open_windows = []  # Keep references to prevent garbage collection
+        self._current_map_window = None  # Reference to the current map window
         self._setup_connections()
         self._setup_lines_tab()
 
@@ -294,68 +296,107 @@ class BusController:
         # Display sublines
         self._display_sublines(sublines, line_id)
 
+    def open_window(self):
+        from view import Second_Window  # importa aquí para evitar dependencias circulares
+        # Si la ventana ya existe, no la recreamos
+        if not hasattr(self, "map_window") or self.map_window is None:
+            self.map_window = Second_Window()
+        self.map_window.show()
+        
+
     def on_subline_button_clicked(self, line_id: str, subline_id: str, subline_name: str) -> None:
         """
-        Open hello world window when a subline button is clicked.
+        Open map window with Folium when a subline button is clicked.
 
         Args:
             line_id: The line identifier
             subline_id: The subline identifier
             subline_name: The subline name
         """
-        print(f"Opening hello world window for line {line_id}, subline {subline_id}: {subline_name}")
+        print(f"Opening Folium map window for line {line_id}, subline {subline_id}: {subline_name}")
 
-        # Create and show hello world window
         try:
-            hello_window = self._create_hello_world_window()
-            hello_window.show()
-            print(f"Hello world window opened for subline {subline_id}")
+            from view.map_window import MapWindow
+            from PyQt6.QtCore import QTimer
+
+            # If we already have a map window, update it with new line data
+            if hasattr(self, '_current_map_window') and self._current_map_window and not self._current_map_window.isHidden():
+                print("Updating existing map window")
+                self._update_map_window(line_id, subline_id, subline_name)
+                return
+
+            # Create new map window
+            map_window = MapWindow(line_id, subline_id, subline_name, model=self.model)
+
+            # Keep reference to prevent garbage collection
+            self._open_windows.append(map_window)
+            self._current_map_window = map_window
+
+            # Connect close event to remove from list
+            map_window.destroyed.connect(lambda: self._on_window_closed(map_window))
+
+            # Show the window
+            map_window.show()
+            map_window.raise_()
+            map_window.activateWindow()
+            map_window.setFocus()
+
+            # Ensure window stays visible
+            QTimer.singleShot(100, lambda: self._ensure_window_visible(map_window))
+
+            print(f"Folium map window opened for subline {subline_id}")
+
         except Exception as e:
-            print(f"Error opening hello world window: {e}")
+            print(f"Error opening map window: {e}")
+            import traceback
+            traceback.print_exc()
             self._show_error_message(
                 "Error",
-                f"Unable to open window for subline {subline_id}: {str(e)}",
+                f"Unable to open map window for subline {subline_id}: {str(e)}",
                 QMessageBox.Icon.Critical
             )
 
-    def _create_hello_world_window(self):
-        """
-        Create a simple window that displays 'Hola mundo'.
+    def _ensure_window_visible(self, window):
+        """Ensure the window is visible and on top."""
+        if window:
+            window.show()
+            window.raise_()
+            window.activateWindow()
+            window.setFocus()
+            window.repaint()
 
-        Returns:
-            QMainWindow: A simple window with hello world message
-        """
-        from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel
-        from PyQt6.QtCore import Qt
+    def _on_window_closed(self, window):
+        """Called when a window is closed to clean up references."""
+        if window in self._open_windows:
+            self._open_windows.remove(window)
+        if window == self._current_map_window:
+            self._current_map_window = None
 
-        class HelloWorldWindow(QMainWindow):
-            def __init__(self):
-                super().__init__()
-                self.setWindowTitle("Hola Mundo")
-                self.setGeometry(400, 300, 300, 150)
-                self.setMinimumSize(250, 120)
+    def _update_map_window(self, line_id: str, subline_id: str, subline_name: str):
+        """Update the existing map window with new line data."""
+        if not self._current_map_window:
+            return
 
-                central_widget = QWidget()
-                self.setCentralWidget(central_widget)
+        try:
+            print(f"Updating map window with line {line_id}, subline {subline_id}")
+            # Update the window properties
+            self._current_map_window.line_id = line_id
+            self._current_map_window.subline_id = subline_id
+            self._current_map_window.subline_name = subline_name
+            self._current_map_window.setWindowTitle(f"Mapa - Línea {line_id} - {subline_name}")
 
-                layout = QVBoxLayout(central_widget)
-                layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            # Reload the map with new data
+            self._current_map_window._load_map()
 
-                hello_label = QLabel("Hola mundo")
-                hello_label.setStyleSheet("""
-                    QLabel {
-                        font-size: 24px;
-                        font-weight: bold;
-                        color: #000000;
-                        padding: 20px;
-                    }
-                """)
-                hello_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            # Bring window to front
+            self._current_map_window.raise_()
+            self._current_map_window.activateWindow()
+            self._current_map_window.setFocus()
 
-                layout.addWidget(hello_label)
-
-        return HelloWorldWindow()
-
+        except Exception as e:
+            print(f"Error updating map window: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _display_sublines(self, sublines: List[Dict[str, Any]], line_id: str) -> None:
         """

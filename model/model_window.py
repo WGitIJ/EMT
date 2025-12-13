@@ -263,3 +263,78 @@ class EMTApi:
             import traceback
             traceback.print_exc()
             return "no_internet"
+
+    def get_line_stops(self, line_id: int | str) -> list | str:
+        """
+        Get stops for a specific bus line.
+
+        Args:
+            line_id: The line identifier
+
+        Returns:
+            list: List of stops with coordinates and information
+            str: Error code if request fails
+        """
+        try:
+            endpoint = f"{self.BASE_URL}/agency/stops?line={line_id}"
+            headers = self._get_headers()
+
+            print(f"Requesting stops for line {line_id}: {endpoint}")
+            response = requests.get(endpoint, headers=headers, timeout=self.REQUEST_TIMEOUT)
+
+            if response.status_code == 401:
+                return "token_expired"
+
+            if not response.ok:
+                print(f"API request failed with status {response.status_code}: {response.text[:200]}")
+                return "no_internet"
+
+            data = response.json()
+            print(f"API response received: {type(data)}")
+
+            if not isinstance(data, list):
+                print(f"Expected list, got {type(data)}")
+                return "invalid_data"
+
+            stops = []
+            for stop in data:
+                stop_id = stop.get("id") or stop.get("stopCode")
+                name = stop.get("stopName") or stop.get("stopDesc", "Sin nombre")
+
+                # Get coordinates
+                lat = stop.get("stopLat")
+                lng = stop.get("stopLon")
+
+                # Convert coordinates to float if they exist
+                try:
+                    if lat is not None and lng is not None:
+                        lat = float(lat)
+                        lng = float(lng)
+                    else:
+                        # Skip stops without coordinates
+                        continue
+                except (ValueError, TypeError):
+                    continue
+
+                if stop_id is not None:
+                    stops.append({
+                        "id": str(stop_id),
+                        "name": name,
+                        "lat": lat,
+                        "lng": lng
+                    })
+
+            print(f"Successfully parsed {len(stops)} stops for line {line_id}")
+            return stops[:20]  # Limit to 20 stops for performance
+
+        except requests.exceptions.ConnectionError:
+            print("Connection error while fetching line stops")
+            return "no_internet"
+        except requests.exceptions.Timeout:
+            print("Timeout error while fetching line stops")
+            return "no_internet"
+        except Exception as e:
+            print(f"Unexpected error fetching line stops: {e}")
+            import traceback
+            traceback.print_exc()
+            return "no_internet"

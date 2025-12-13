@@ -8,18 +8,15 @@ Provides real-time bus arrival information for Palma de Mallorca stops.
 import sys
 
 from PyQt6.QtWidgets import QApplication, QMainWindow
+from PyQt6.QtCore import Qt
+# Import QtWebEngineWidgets to ensure it's available before QApplication creation
+from PyQt6.QtWebEngineWidgets import QWebEngineView
 
 from controller.controller_window import BusController
 from view.uiEMT import Ui_MainWindow
 
 
 class MainWindow(QMainWindow):
-    """
-    Main application window.
-
-    Sets up the UI and initializes the controller to handle
-    business logic and user interactions.
-    """
 
     WINDOW_TITLE = "EMT Palma - Bus Arrivals"
 
@@ -41,7 +38,9 @@ class MainWindow(QMainWindow):
 
 
 def main() -> None:
-    """Application entry point."""
+    # Configure Qt attributes for WebEngine
+    QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
+
     app = QApplication(sys.argv)
 
     window = MainWindow()
