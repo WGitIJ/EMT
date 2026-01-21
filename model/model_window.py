@@ -1,6 +1,7 @@
 import requests
 
 class EMTApi:
+<<<<<<< Updated upstream
 
     TOKEN = (
         "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzM4NCJ9.eyJzdWIiOiI3ODQ1NTUiLCJpYXQiOjE3NjE1Njg2MjksImV4cCI6MzMzOTQ0ODYyOSwidXNlcm5hbWUiOiIxNzYxNTY4NjI4NzY1NVJCVUtTUk81SU9BWkVXTjE0T0EiLCJ0b2tlbl9kZXZpY2UiOiJkNTk2YzExMzQ4MDExNjExZTNmMmYzMzllNzJlYjgzYzFkNmY2Mzc3ODhhYjQyODNjMzc4YzYyNmIzYjZkOWFjIiwiZGV2aWNlX3R5cGVfaWQiOjMsInJvbGVzIjoiQU5PTklNTyJ9.8d6suKy2_5aw1H6pGktFIizOwUqIYb1piFGKfAQUlCywq7vuW6-rh_7y7VSwoqdl"
@@ -23,6 +24,30 @@ class EMTApi:
                 "authorization": self.TOKEN,
                 "user-agent": "Mozilla/5.0"
             }
+=======
+    API_TOKEN = (
+        "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzM4NCJ9.eyJzdWIiOiI3ODQ1NTUiLCJpYXQiOjE3NjE1"
+        "Njg2MjksImV4cCI6MzMzOTQ0ODYyOSwidXNlcm5hbWUiOiIxNzYxNTY4NjI4NzY1NVJCVUtTUk81"
+        "SU9BWkVXTjE0T0EiLCJ0b2tlbl9kZXZpY2UiOiJkNTk2YzExMzQ4MDExNjExZTNmMmYzMzllNzJl"
+        "YjgzYzFkNmY2Mzc3ODhhYjQyODNjMzc4YzYyNmIzYjZkOWFjIiwiZGV2aWNlX3R5cGVfaWQiOjMs"
+        "InJvbGVzIjoiQU5PTklNTyJ9.8d6suKy2_5aw1H6pGktFIizOwUqIYb1piFGKfAQUlCywq7vuW6-"
+        "rh_7y7VSwoqdl"
+    )
+
+    BASE_URL = "https://www.emtpalma.cat/maas/api/v1"
+    REQUEST_TIMEOUT = 10
+    MAX_RESULTS = 8
+
+    def __init__(self) -> None:
+        self.line_colors = self._load_line_colors()
+        self.lines_data = self._load_lines_data()
+
+    def _load_line_colors(self) -> dict:
+        try:
+            endpoint = f"{self.BASE_URL}/agency/lines/"
+            headers = self._get_headers()
+            response = requests.get(endpoint, headers=headers, timeout=self.REQUEST_TIMEOUT)
+>>>>>>> Stashed changes
 
             response = requests.get(url, headers=headers, timeout=10)
             if not response.ok:
@@ -40,6 +65,7 @@ class EMTApi:
             return colors
 
         except Exception as e:
+<<<<<<< Updated upstream
             print(f"[ERROR] No se pudieron cargar colores: {e}")
             return {}
 
@@ -58,6 +84,48 @@ class EMTApi:
             r = requests.get(url, headers=headers, timeout=15)
 
             if r.status_code == 401:
+=======
+            print(f"Error loading line colors: {e}")
+            return {}
+
+    def _load_lines_data(self) -> dict:
+        try:
+            endpoint = f"{self.BASE_URL}/agency/lines/"
+            headers = self._get_headers()
+            response = requests.get(endpoint, headers=headers, timeout=self.REQUEST_TIMEOUT)
+
+            if not response.ok:
+                print("Warning: Failed to load lines data from API")
+                return {}
+
+            data = response.json()
+            lines_info = {}
+
+            for line in data:
+                line_code = str(line.get("code", ""))
+                if line_code:
+                    lines_info[line_code] = {
+                        "id": line_code,
+                        "name": line.get("name", ""),
+                        "long_name": line.get("longName", ""),
+                        "color": f"#{line.get('routeColor', '757575')}"
+                    }
+
+            print(f"Successfully loaded {len(lines_info)} lines information")
+            return lines_info
+
+        except Exception as e:
+            print(f"Error loading lines data: {e}")
+            return {}
+
+    def get_arrivals(self, stop_id: int) -> list | str:
+        try:
+            endpoint = f"{self.BASE_URL}/agency/stops/{stop_id}/timestr"
+            headers = self._get_headers()
+            response = requests.get(endpoint, headers=headers, timeout=self.REQUEST_TIMEOUT)
+
+            if response.status_code == 401:
+>>>>>>> Stashed changes
                 return "token_expired"
 
             if not r.ok:
@@ -93,14 +161,11 @@ class EMTApi:
 
             return stops
 
-        except requests.exceptions.ConnectionError:
-            return "no_internet"
-        except requests.exceptions.Timeout:
-            return "no_internet"
         except Exception as e:
             print(f"[ERROR get_all_stops] {e}")
             return "no_internet"
 
+<<<<<<< Updated upstream
     # --------------------------------------------------------
     # Obtener nombre de una parada concreta
     # --------------------------------------------------------
@@ -120,12 +185,24 @@ class EMTApi:
             return None
 
         return self._stops_by_id.get(str(stop_id))
+=======
+    def _get_headers(self) -> dict:
+        return {
+            "accept": "*/*",
+            "authorization": self.API_TOKEN,
+            "user-agent": "EMT-Palma-Client/1.0"
+        }
+
+    def get_all_lines(self) -> dict | str:
+        return self.lines_data if self.lines_data else "no_data"
+>>>>>>> Stashed changes
 
     # --------------------------------------------------------
     # Consulta de tiempos de llegada
     # --------------------------------------------------------
     def get_arrivals(self, stop_id: int):
         try:
+<<<<<<< Updated upstream
             url = f"https://www.emtpalma.cat/maas/api/v1/agency/stops/{stop_id}/timestr"
             headers = {
                 "accept": "*/*",
@@ -134,11 +211,17 @@ class EMTApi:
             }
 
             r = requests.get(url, headers=headers, timeout=10)
+=======
+            endpoint = f"{self.BASE_URL}/agency/lines/{line_id}/sublines"
+            headers = self._get_headers()
+            response = requests.get(endpoint, headers=headers, timeout=self.REQUEST_TIMEOUT)
+>>>>>>> Stashed changes
 
             # 🔒 Token caducado
             if r.status_code == 401:
                 return "token_expired"
 
+<<<<<<< Updated upstream
             # ❌ Error de red o servidor
             if not r.ok:
                 return "no_internet"
@@ -248,6 +331,17 @@ class EMTApi:
                     print(f"[ERROR get_line_stops] Formato de respuesta inesperado: {list(data.keys())}")
                     return "no_internet"
             
+=======
+            if not response.ok:
+                print(f"Sublines request failed with status {response.status_code}: {response.text[:200]}")
+                return "no_internet"
+
+            data = response.json()
+
+            if isinstance(data, dict):
+                data = data.get("sublines") or data.get("subLines") or data.get("data") or []
+
+>>>>>>> Stashed changes
             if not isinstance(data, list):
                 print(f"[ERROR get_line_stops] La respuesta no es una lista: {type(data)}")
                 return "no_internet"
@@ -268,6 +362,7 @@ class EMTApi:
             print(f"[INFO get_line_stops] Se encontraron {len(stops)} paradas para stopId {stop_id}")
             return stops
 
+<<<<<<< Updated upstream
         except requests.exceptions.ConnectionError as e:
             print(f"[ERROR get_line_stops] Error de conexión: {e}")
             return "no_internet"
@@ -383,3 +478,132 @@ class EMTApi:
         if isinstance(data, dict):
             data = data.get("stops") or data.get("data") or []
         return data
+=======
+            print(f"Successfully parsed {len(sublines)} sublines for line {line_id}")
+            return sublines
+
+        except Exception as e:
+            print(f"Unexpected error fetching sublines: {e}")
+            return "no_internet"
+
+    def get_subline_trip_ids(self, subline_id: str) -> list[str]:
+        endpoint = f"{self.BASE_URL}/agency/lines/directions-subline?subLineId={subline_id}"
+        headers = self._get_headers()
+
+        try:
+            response = requests.get(endpoint, headers=headers, timeout=self.REQUEST_TIMEOUT)
+
+            if response.status_code == 401:
+                print("Token expirado")
+                return []
+
+            if not response.ok:
+                print(f"directions-subline falló: {response.status_code}")
+                return []
+
+            data = response.json()
+
+            if not isinstance(data, list):
+                print("Respuesta inesperada (no lista)")
+                return []
+
+            trip_ids = []
+            for item in data:
+                trip_id = item.get("tripId")
+                if trip_id is not None:
+                    trip_ids.append(str(trip_id))
+
+            print(f"Trip IDs encontrados para subline {subline_id}: {trip_ids}")
+            return trip_ids
+
+        except Exception as e:
+            print(f"Error en directions-subline: {e}")
+            return []
+
+    def get_subline_stops(self, line_id: str, trip_id: str) -> list:
+        endpoint = (
+            f"{self.BASE_URL}/agency/lines/{line_id}/stops"
+            f"?tripId={trip_id}&isLine=0&isLineNearStop=0&both=1"
+        )
+        headers = self._get_headers()
+
+        try:
+            response = requests.get(endpoint, headers=headers, timeout=self.REQUEST_TIMEOUT)
+
+            if response.status_code == 401:
+                print("Token expirado en stops")
+                return []
+
+            if not response.ok:
+                print(f"Stops falló: {response.status_code}")
+                return []
+
+            data = response.json()
+
+            if not isinstance(data, list):
+                print("Respuesta de stops inesperada")
+                return []
+
+            stops = []
+            for item in data:
+                stop_id = item.get("stopCode") or item.get("id") or item.get("stopGtfsId")
+                name = item.get("stopName") or item.get("stopDesc") or "Parada"
+                lat = item.get("stopLat")
+                lon = item.get("stopLon")
+
+                if stop_id and lat is not None and lon is not None:
+                    try:
+                        stops.append({
+                            "id": str(stop_id),
+                            "name": name,
+                            "lat": float(lat),
+                            "lon": float(lon)
+                        })
+                    except ValueError:
+                        continue
+
+            print(f"Stops: {len(stops)} paradas encontradas para tripId {trip_id}")
+            return stops
+
+        except Exception as e:
+            print(f"Error en stops: {e}")
+            return []
+
+    def get_subline_shape(self, line_id: str, trip_id: str) -> list:
+        endpoint = f"{self.BASE_URL}/agency/lines/{line_id}/shape?tripId={trip_id}"
+        headers = self._get_headers()
+
+        try:
+            response = requests.get(endpoint, headers=headers, timeout=self.REQUEST_TIMEOUT)
+
+            if response.status_code == 401:
+                print("Token expirado en shape")
+                return []
+
+            if not response.ok:
+                print(f"Shape falló: {response.status_code}")
+                return []
+
+            data = response.json()
+
+            if not isinstance(data, list):
+                print("Respuesta de shape inesperada")
+                return []
+
+            shape_points = []
+            for item in data:
+                lat = item.get("latitude")
+                lon = item.get("longitude")
+                if lat is not None and lon is not None:
+                    try:
+                        shape_points.append([float(lat), float(lon)])
+                    except ValueError:
+                        continue
+
+            print(f"Shape: {len(shape_points)} puntos de recorrido para tripId {trip_id}")
+            return shape_points
+
+        except Exception as e:
+            print(f"Error en shape: {e}")
+            return []
+>>>>>>> Stashed changes
